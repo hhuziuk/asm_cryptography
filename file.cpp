@@ -127,7 +127,7 @@ void substitutionDecryptASM(char* data, size_t len,
 // Zasada działania polega na cyklicznym przesuwaniu alfabetu, a kluczem jest liczba liter, o które następuje przesunięcie.
 // 
 // Ogólny wzor:
-// y=(x+k)mod\n
+// y=(x+k)mod n
 // x=(y-k)mod n, gdzie
 // x jest numerem sekwencyjnym znaku tekstu jawnego, 
 // y - numer porządkowy znaku szyfrogramu, 
@@ -206,11 +206,9 @@ void tea_encrypt_c(uint32_t msg[2], const uint32_t key[4]) {
 // przykład szyfru TEA zaimplementowanego w ASM
 void tea_encrypt_ASM(uint32_t msg[2], const uint32_t key[4]) {
     __asm {
-        // Input parameters
         mov eax, msg
         mov edx, key
 
-        // TEA Encryption
         mov esi, [eax] // msg[0]
         mov edi, [eax + 4] // msg[1]
 
@@ -218,7 +216,6 @@ void tea_encrypt_ASM(uint32_t msg[2], const uint32_t key[4]) {
         mov ebx, 0
 
         tea_encrypt_top:
-        // Encrypt 0th message word
         mov ebx, edi
             shl ebx, 4
             add ebx, [edx]
@@ -230,7 +227,6 @@ void tea_encrypt_ASM(uint32_t msg[2], const uint32_t key[4]) {
             xor ebx, eax
             add esi, ebx
 
-            // Encrypt 1st message word
             mov ebx, esi
             shl ebx, 4
             add ebx, [edx + 8]
@@ -242,12 +238,10 @@ void tea_encrypt_ASM(uint32_t msg[2], const uint32_t key[4]) {
             xor ebx, eax
             add edi, ebx
 
-            // Increment
             add ecx, 0x9E3779B9
             cmp ecx, 0x6526B0D9
             jne tea_encrypt_top
 
-            // Store message
             mov eax, msg
             mov[eax], esi
             mov[eax + 4], edi
@@ -262,7 +256,7 @@ void tea_decrypt_c(uint32_t msg[2], const uint32_t key[4]) {
     uint32_t k1 = key[1];
     uint32_t k2 = key[2];
     uint32_t k3 = key[3];
-    uint32_t sum = UINT32_C(0xC6EF3720); // Sum for decryption
+    uint32_t sum = UINT32_C(0xC6EF3720); 
 
     for (int i = 0; i < 32; i++) {
         z -= (((y << 4) + k2) ^ (y + sum) ^ ((y >> 5) + k3));
@@ -277,18 +271,16 @@ void tea_decrypt_c(uint32_t msg[2], const uint32_t key[4]) {
 // przykład szyfru TEA zaimplementowanego w ASM
 void tea_decrypt_ASM(uint32_t msg[2], const uint32_t key[4]) {
     __asm {
-        // Input parameters
         mov eax, msg
         mov edx, key
 
         mov esi, [eax]
         mov edi, [eax + 4]
 
-        mov ecx, 0 // Initial sum for decryption
+        mov ecx, 0 
         mov ebx, 0xC6EF3720 // 32 rounds
 
         tea_decrypt_top:
-        // Decrypt 1st message word
         sub edi, ebx
             mov eax, edi
             shr eax, 5
@@ -299,7 +291,6 @@ void tea_decrypt_ASM(uint32_t msg[2], const uint32_t key[4]) {
             sub esi, [edx + 8]
             xor esi, eax
 
-            // Decrypt 0th message word
             sub esi, ebx
             mov eax, esi
             shr eax, 5
@@ -310,12 +301,10 @@ void tea_decrypt_ASM(uint32_t msg[2], const uint32_t key[4]) {
             sub edi, [edx]
             xor edi, eax
 
-            // Decrement
             sub ecx, 0x9E3779B9
             cmp ecx, 0xC6EF3720
             jne tea_decrypt_top
 
-            // Store decrypted message
             mov eax, msg
             mov[eax], esi
             mov[eax + 4], edi
